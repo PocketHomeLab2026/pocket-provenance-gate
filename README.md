@@ -163,6 +163,16 @@ if (!attempt.admitted) {
 
 The gate itself also returns `loadShed: true` before digest calculation when configured evidence or claim-count limits are exceeded. The CLI checks each input file's size before reading it; use `--maximum-input-bytes` to tune the default 4 MiB cap. These controls reduce application work but cannot absorb a link-saturating distributed denial-of-service attack; that remains the responsibility of the hosting edge or network provider.
 
+## Performance benchmark
+
+Run the public local comparison with:
+
+```bash
+npm run benchmark:performance
+```
+
+It compares an ordinary JSON parse-and-pass-through path with the same JSON parse followed by full gate evaluation at 1, 10, 100, and 1,000 linked evidence records. It also measures the early load-shed path above the default record limit. Results are machine-dependent microbenchmarks, so the report includes input sizes and absolute milliseconds instead of claiming a universal speed ratio. Valid fixtures must retain a `validAcceptanceRate` of `1`; overload is measured separately and is intentionally rejected.
+
 ## Security boundaries
 
 - SHA-256 detects accidental or adversarial changes after a digest is created; it is not an identity signature. Use a trusted signature or MAC when the evidence producer is outside your trust boundary.

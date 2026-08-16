@@ -140,6 +140,7 @@ export class ProvenanceGate {
     const requiredIndex = levelIndex(this.requiredLevel);
     const sufficient = fresh.filter((record) => levelIndex(record.level) >= requiredIndex);
     if (sufficient.length === 0) reasons.push(`required_level_not_met:${this.requiredLevel}`);
+    const sufficientIds = new Set(sufficient.map((record) => record.id));
 
     const claims = rawClaims;
     if (claims.some((claim) => Array.isArray(claim?.evidenceIds)
@@ -147,7 +148,7 @@ export class ProvenanceGate {
     const supportedClaims = claims.filter((claim) => Array.isArray(claim?.evidenceIds)
       && claim.evidenceIds.length <= this.maximumEvidenceIdsPerClaim
       && claim.evidenceIds.length > 0
-      && claim.evidenceIds.every((id) => sufficient.some((record) => record.id === id)));
+      && claim.evidenceIds.every((id) => sufficientIds.has(id)));
     if (supportedClaims.length !== claims.length) reasons.push("unsupported_claims");
     if (claims.length === 0) reasons.push("no_claims");
 
