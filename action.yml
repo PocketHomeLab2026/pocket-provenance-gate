@@ -34,7 +34,7 @@ inputs:
     required: false
     default: ""
   format:
-    description: Report format: json, junit, or sarif.
+    description: "Report format: json, junit, or sarif."
     required: false
     default: sarif
   output:
