@@ -1,0 +1,16 @@
+{
+  "name": "pocket-provenance-gate",
+  "version": "0.1.0",
+  "description": "Evidence labels, digests, and deterministic quality gates for AI results",
+  "type": "module",
+  "main": "src/gate.js",
+  "exports": "./src/gate.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
+
