@@ -1,0 +1,258 @@
+{
+  "version": "pocket-provenance-benchmark-v1",
+  "now": 1800000000000,
+  "cases": [
+    {
+      "id": "accept-valid-local",
+      "description": "A fresh local self-test supports a local claim.",
+      "candidate": { "output": "local check passed", "evidenceIds": ["local-1"], "claims": [{ "text": "local check passed", "evidenceIds": ["local-1"] }] },
+      "evidence": [{ "spec": { "id": "local-1", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } }],
+      "expectedAccepted": true
+    },
+    {
+      "id": "accept-valid-production",
+      "description": "Fresh production acceptance evidence supports a production claim.",
+      "gate": { "requiredLevel": "production" },
+      "candidate": { "output": "production accepted", "evidenceIds": ["prod-1"], "claims": [{ "text": "production accepted", "evidenceIds": ["prod-1"] }] },
+      "evidence": [{ "spec": { "id": "prod-1", "level": "production", "source": "acceptance", "observedAt": 1799999999000, "payload": { "status": 200, "bodyVerified": true } } }],
+      "expectedAccepted": true
+    },
+    {
+      "id": "accept-multiple-linked-evidence",
+      "description": "Every linked record satisfies the requested live-device level.",
+      "gate": { "requiredLevel": "live-device" },
+      "candidate": { "output": "device and production checks passed", "evidenceIds": ["device-1", "prod-2"], "claims": [{ "text": "both checks passed", "evidenceIds": ["device-1", "prod-2"] }] },
+      "evidence": [
+        { "spec": { "id": "device-1", "level": "live-device", "source": "instrumentation", "observedAt": 1799999998000, "payload": { "passed": true } } },
+        { "spec": { "id": "prod-2", "level": "production", "source": "probe", "observedAt": 1799999999000, "payload": { "passed": true } } }
+      ],
+      "expectedAccepted": true
+    },
+    {
+      "id": "accept-exact-age-boundary",
+      "description": "Evidence exactly at the maximum age remains valid.",
+      "candidate": { "output": "boundary accepted", "evidenceIds": ["age-boundary"], "claims": [{ "text": "boundary accepted", "evidenceIds": ["age-boundary"] }] },
+      "evidence": [{ "spec": { "id": "age-boundary", "level": "local-self-test", "source": "clock-test", "observedAt": 1799913600000, "payload": { "passed": true } } }],
+      "expectedAccepted": true
+    },
+    {
+      "id": "accept-exact-future-skew-boundary",
+      "description": "Evidence exactly at the permitted future clock skew remains valid.",
+      "candidate": { "output": "clock skew accepted", "evidenceIds": ["future-boundary"], "claims": [{ "text": "clock skew accepted", "evidenceIds": ["future-boundary"] }] },
+      "evidence": [{ "spec": { "id": "future-boundary", "level": "local-self-test", "source": "clock-test", "observedAt": 1800000060000, "payload": { "passed": true } } }],
+      "expectedAccepted": true
+    },
+    {
+      "id": "accept-canonical-key-order",
+      "description": "Canonical hashing accepts nested JSON independent of insertion order.",
+      "candidate": { "output": "canonical payload accepted", "evidenceIds": ["canonical"], "claims": [{ "text": "canonical payload accepted", "evidenceIds": ["canonical"] }] },
+      "evidence": [{ "spec": { "id": "canonical", "level": "local-self-test", "source": "canonicalizer", "observedAt": 1799999999000, "payload": { "z": 1, "nested": { "b": 2, "a": 1 }, "a": 0 } } }],
+      "expectedAccepted": true
+    },
+    {
+      "id": "reject-tampered-payload",
+      "description": "Changing the payload after signing invalidates the digest.",
+      "candidate": { "output": "tampered result", "evidenceIds": ["tamper-payload"], "claims": [{ "text": "passed", "evidenceIds": ["tamper-payload"] }] },
+      "evidence": [{ "spec": { "id": "tamper-payload", "level": "live-device", "source": "instrumentation", "observedAt": 1799999999000, "payload": { "passed": true } }, "mutate": { "payload": { "passed": false } } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["invalid_or_tampered_evidence"]
+    },
+    {
+      "id": "reject-tampered-source",
+      "description": "Changing the asserted evidence source invalidates the digest.",
+      "candidate": { "output": "source changed", "evidenceIds": ["tamper-source"], "claims": [{ "text": "source is trusted", "evidenceIds": ["tamper-source"] }] },
+      "evidence": [{ "spec": { "id": "tamper-source", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } }, "mutate": { "source": "production" } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["invalid_or_tampered_evidence"]
+    },
+    {
+      "id": "reject-altered-digest",
+      "description": "A substituted digest is rejected.",
+      "candidate": { "output": "digest changed", "evidenceIds": ["bad-digest"], "claims": [{ "text": "passed", "evidenceIds": ["bad-digest"] }] },
+      "evidence": [{ "spec": { "id": "bad-digest", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } }, "mutate": { "digest": "0000000000000000000000000000000000000000000000000000000000000000" } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["invalid_or_tampered_evidence"]
+    },
+    {
+      "id": "reject-unsigned-extra-field",
+      "description": "Adding an unsigned top-level field changes the signed body.",
+      "candidate": { "output": "extra field", "evidenceIds": ["extra-field"], "claims": [{ "text": "passed", "evidenceIds": ["extra-field"] }] },
+      "evidence": [{ "spec": { "id": "extra-field", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } }, "mutate": { "approval": "injected" } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["invalid_or_tampered_evidence"]
+    },
+    {
+      "id": "reject-id-rebinding",
+      "description": "A valid digest cannot be rebound to another evidence ID.",
+      "candidate": { "output": "rebound", "evidenceIds": ["rebound"], "claims": [{ "text": "passed", "evidenceIds": ["rebound"] }] },
+      "evidence": [{ "spec": { "id": "original", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } }, "mutate": { "id": "rebound" } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["invalid_or_tampered_evidence"]
+    },
+    {
+      "id": "reject-local-evidence-for-production",
+      "description": "A local self-test cannot substantiate a production claim.",
+      "gate": { "requiredLevel": "production" },
+      "candidate": { "output": "production works", "evidenceIds": ["only-local"], "claims": [{ "text": "production works", "evidenceIds": ["only-local"] }] },
+      "evidence": [{ "spec": { "id": "only-local", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["required_level_not_met:production", "unsupported_claims"]
+    },
+    {
+      "id": "reject-synthetic-evidence-for-live-device",
+      "description": "A synthetic probe cannot substantiate a live-device claim.",
+      "gate": { "requiredLevel": "live-device" },
+      "candidate": { "output": "phone works", "evidenceIds": ["synthetic-phone"], "claims": [{ "text": "phone works", "evidenceIds": ["synthetic-phone"] }] },
+      "evidence": [{ "spec": { "id": "synthetic-phone", "level": "synthetic", "source": "fixture", "observedAt": 1799999999000, "payload": { "simulated": true } } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["required_level_not_met:live-device"]
+    },
+    {
+      "id": "reject-stale-evidence",
+      "description": "Evidence one millisecond beyond maximum age is stale.",
+      "candidate": { "output": "old result", "evidenceIds": ["stale"], "claims": [{ "text": "still valid", "evidenceIds": ["stale"] }] },
+      "evidence": [{ "spec": { "id": "stale", "level": "local-self-test", "source": "old-run", "observedAt": 1799913599999, "payload": { "passed": true } } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["stale_evidence"]
+    },
+    {
+      "id": "reject-future-evidence",
+      "description": "Evidence one millisecond beyond permitted future skew is rejected.",
+      "candidate": { "output": "future result", "evidenceIds": ["future"], "claims": [{ "text": "already observed", "evidenceIds": ["future"] }] },
+      "evidence": [{ "spec": { "id": "future", "level": "local-self-test", "source": "clock-test", "observedAt": 1800000060001, "payload": { "passed": true } } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["future_evidence"]
+    },
+    {
+      "id": "reject-missing-evidence-record",
+      "description": "A candidate cannot cite an evidence record that was not supplied.",
+      "candidate": { "output": "missing record", "evidenceIds": ["not-supplied"], "claims": [{ "text": "passed", "evidenceIds": ["not-supplied"] }] },
+      "evidence": [],
+      "expectedAccepted": false,
+      "expectedReasons": ["missing_evidence_records", "no_valid_evidence"]
+    },
+    {
+      "id": "reject-claim-outside-candidate-evidence",
+      "description": "A claim cannot use evidence omitted from the candidate evidence set.",
+      "candidate": { "output": "undeclared evidence", "evidenceIds": ["declared"], "claims": [{ "text": "uses hidden evidence", "evidenceIds": ["hidden"] }] },
+      "evidence": [
+        { "spec": { "id": "declared", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } },
+        { "spec": { "id": "hidden", "level": "production", "source": "hidden", "observedAt": 1799999999000, "payload": { "passed": true } } }
+      ],
+      "expectedAccepted": false,
+      "expectedReasons": ["unsupported_claims"]
+    },
+    {
+      "id": "reject-empty-output",
+      "description": "Evidence alone cannot approve an empty output.",
+      "candidate": { "output": "   ", "evidenceIds": ["empty-output"], "claims": [{ "text": "passed", "evidenceIds": ["empty-output"] }] },
+      "evidence": [{ "spec": { "id": "empty-output", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["empty_output"]
+    },
+    {
+      "id": "reject-no-claims",
+      "description": "An output without evidence-linked claims is not accepted.",
+      "candidate": { "output": "unclaimed output", "evidenceIds": ["no-claims"], "claims": [] },
+      "evidence": [{ "spec": { "id": "no-claims", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["no_claims"]
+    },
+    {
+      "id": "reject-duplicate-evidence-identities",
+      "description": "Two records with the same ID are ambiguous even when both digests are valid.",
+      "candidate": { "output": "ambiguous identity", "evidenceIds": ["duplicate"], "claims": [{ "text": "passed", "evidenceIds": ["duplicate"] }] },
+      "evidence": [
+        { "spec": { "id": "duplicate", "level": "local-self-test", "source": "first", "observedAt": 1799999998000, "payload": { "passed": true } } },
+        { "spec": { "id": "duplicate", "level": "production", "source": "second", "observedAt": 1799999999000, "payload": { "passed": true } } }
+      ],
+      "expectedAccepted": false,
+      "expectedReasons": ["duplicate_evidence_ids"]
+    },
+    {
+      "id": "reject-duplicate-candidate-references",
+      "description": "Repeating a candidate evidence reference cannot inflate support.",
+      "candidate": { "output": "duplicate reference", "evidenceIds": ["one", "one"], "claims": [{ "text": "passed", "evidenceIds": ["one"] }] },
+      "evidence": [{ "spec": { "id": "one", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["duplicate_candidate_evidence_ids"]
+    },
+    {
+      "id": "reject-duplicate-claim-references",
+      "description": "Repeating an evidence reference inside one claim is rejected.",
+      "candidate": { "output": "duplicate claim reference", "evidenceIds": ["one-claim"], "claims": [{ "text": "passed", "evidenceIds": ["one-claim", "one-claim"] }] },
+      "evidence": [{ "spec": { "id": "one-claim", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["duplicate_claim_evidence_ids"]
+    },
+    {
+      "id": "reject-invalid-timestamp",
+      "description": "A non-integer timestamp is rejected before freshness can be asserted.",
+      "candidate": { "output": "bad timestamp", "evidenceIds": ["bad-time"], "claims": [{ "text": "passed", "evidenceIds": ["bad-time"] }] },
+      "evidence": [{ "record": { "id": "bad-time", "level": "local-self-test", "source": "fixture", "observedAt": "1800000000000", "payload": { "passed": true }, "digest": "0000000000000000000000000000000000000000000000000000000000000000" } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["invalid_evidence_timestamp", "invalid_or_tampered_evidence"]
+    },
+    {
+      "id": "reject-unknown-evidence-level",
+      "description": "An unknown evidence level cannot enter the observation ladder.",
+      "candidate": { "output": "invented level", "evidenceIds": ["unknown-level"], "claims": [{ "text": "passed", "evidenceIds": ["unknown-level"] }] },
+      "evidence": [{ "record": { "id": "unknown-level", "level": "unlimited", "source": "fixture", "observedAt": 1799999999000, "payload": { "passed": true }, "digest": "0000000000000000000000000000000000000000000000000000000000000000" } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["invalid_or_tampered_evidence"]
+    },
+    {
+      "id": "reject-evidence-record-limit",
+      "description": "The gate fails closed when supplied evidence exceeds its configured record limit.",
+      "gate": { "maximumEvidenceRecords": 1 },
+      "candidate": { "output": "bounded input", "evidenceIds": ["limit-first"], "claims": [{ "text": "passed", "evidenceIds": ["limit-first"] }] },
+      "evidence": [
+        { "spec": { "id": "limit-first", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } },
+        { "spec": { "id": "limit-second", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } }
+      ],
+      "expectedAccepted": false,
+      "expectedReasons": ["input_limits_exceeded:evidence_records"]
+    },
+    {
+      "id": "reject-candidate-reference-limit",
+      "description": "The gate fails closed when candidate evidence references exceed their limit.",
+      "gate": { "maximumCandidateEvidenceIds": 1 },
+      "candidate": { "output": "too many references", "evidenceIds": ["ref-first", "ref-second"], "claims": [{ "text": "first passed", "evidenceIds": ["ref-first"] }] },
+      "evidence": [
+        { "spec": { "id": "ref-first", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } },
+        { "spec": { "id": "ref-second", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } }
+      ],
+      "expectedAccepted": false,
+      "expectedReasons": ["input_limits_exceeded:candidate_evidence_ids"]
+    },
+    {
+      "id": "reject-claim-count-limit",
+      "description": "The gate fails closed when the number of claims exceeds its configured limit.",
+      "gate": { "maximumClaims": 1 },
+      "candidate": { "output": "too many claims", "evidenceIds": ["claim-limit"], "claims": [{ "text": "first", "evidenceIds": ["claim-limit"] }, { "text": "second", "evidenceIds": ["claim-limit"] }] },
+      "evidence": [{ "spec": { "id": "claim-limit", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } }],
+      "expectedAccepted": false,
+      "expectedReasons": ["input_limits_exceeded:claims"]
+    },
+    {
+      "id": "reject-claim-reference-limit",
+      "description": "The gate fails closed when one claim cites too many evidence records.",
+      "gate": { "maximumEvidenceIdsPerClaim": 1 },
+      "candidate": { "output": "oversized claim", "evidenceIds": ["claim-ref-1", "claim-ref-2"], "claims": [{ "text": "both passed", "evidenceIds": ["claim-ref-1", "claim-ref-2"] }] },
+      "evidence": [
+        { "spec": { "id": "claim-ref-1", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } },
+        { "spec": { "id": "claim-ref-2", "level": "local-self-test", "source": "node:test", "observedAt": 1799999999000, "payload": { "passed": true } } }
+      ],
+      "expectedAccepted": false,
+      "expectedReasons": ["input_limits_exceeded:claim_evidence_ids"]
+    },
+    {
+      "id": "reject-no-evidence",
+      "description": "A non-empty claim still fails when it cites no evidence.",
+      "candidate": { "output": "unsupported", "evidenceIds": [], "claims": [{ "text": "unsupported", "evidenceIds": [] }] },
+      "evidence": [],
+      "expectedAccepted": false,
+      "expectedReasons": ["no_valid_evidence", "unsupported_claims"]
+    }
+  ]
+}

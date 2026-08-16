@@ -1,16 +1,54 @@
 {
   "name": "pocket-provenance-gate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Evidence labels, digests, and deterministic quality gates for AI results",
   "type": "module",
   "main": "src/gate.js",
-  "exports": "./src/gate.js",
+  "exports": {
+    ".": "./src/gate.js",
+    "./admission": "./src/admission.js",
+    "./benchmark": "./src/benchmark.js",
+    "./formatters": "./src/formatters.js"
+  },
+  "bin": {
+    "pocket-provenance-gate": "src/cli.js"
+  },
+  "files": [
+    "src",
+    "benchmarks",
+    "examples",
+    "action.yml",
+    "README.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "benchmark": "node src/cli.js benchmark --corpus benchmarks/corpus.json",
+    "prepack": "npm test && npm run benchmark"
   },
   "engines": {
     "node": ">=20"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PocketHomeLab2026/pocket-provenance-gate.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PocketHomeLab2026/pocket-provenance-gate/issues"
+  },
+  "homepage": "https://github.com/PocketHomeLab2026/pocket-provenance-gate#readme",
+  "keywords": [
+    "provenance",
+    "evidence",
+    "sarif",
+    "junit",
+    "github-action",
+    "ai-safety",
+    "quality-gate"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "MIT"
 }
-

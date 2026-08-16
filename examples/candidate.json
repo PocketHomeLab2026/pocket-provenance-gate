@@ -1,0 +1,10 @@
+{
+  "output": "example local self-test passed",
+  "evidenceIds": ["example-local"],
+  "claims": [
+    {
+      "text": "the example local self-test passed",
+      "evidenceIds": ["example-local"]
+    }
+  ]
+}

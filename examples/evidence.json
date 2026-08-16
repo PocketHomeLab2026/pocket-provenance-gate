@@ -1,0 +1,13 @@
+[
+  {
+    "id": "example-local",
+    "level": "local-self-test",
+    "source": "example-ci",
+    "observedAt": 1800000000000,
+    "payload": {
+      "passed": true,
+      "tests": 3
+    },
+    "digest": "22776e9b3380f802900255d734ed902b512164dd265bef7a2070d2c4e88d481d"
+  }
+]

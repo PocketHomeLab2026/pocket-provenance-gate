@@ -1,0 +1,88 @@
+name: Pocket Provenance Gate
+description: Reject AI or automation claims that exceed their linked evidence.
+author: PocketHomeLab2026
+
+inputs:
+  candidate:
+    description: Path to the candidate JSON file.
+    required: true
+  evidence:
+    description: Path to the evidence JSON array.
+    required: true
+  required-level:
+    description: Minimum evidence level required for every claim.
+    required: false
+    default: local-self-test
+  maximum-age-ms:
+    description: Maximum permitted evidence age in milliseconds.
+    required: false
+    default: "86400000"
+  maximum-future-skew-ms:
+    description: Permitted future clock skew in milliseconds.
+    required: false
+    default: "60000"
+  minimum-score:
+    description: Minimum acceptance score from zero to one.
+    required: false
+    default: "0.7"
+  maximum-input-bytes:
+    description: Reject either JSON input file before reading when it exceeds this size.
+    required: false
+    default: "4194304"
+  now:
+    description: Optional fixed Unix epoch milliseconds for reproducible checks.
+    required: false
+    default: ""
+  format:
+    description: Report format: json, junit, or sarif.
+    required: false
+    default: sarif
+  output:
+    description: Report output path.
+    required: false
+    default: provenance-gate.sarif
+
+outputs:
+  report:
+    description: Path to the generated report.
+    value: ${{ steps.verify.outputs.report }}
+
+runs:
+  using: composite
+  steps:
+    - id: verify
+      shell: bash
+      env:
+        POCKET_CANDIDATE: ${{ inputs.candidate }}
+        POCKET_EVIDENCE: ${{ inputs.evidence }}
+        POCKET_REQUIRED_LEVEL: ${{ inputs.required-level }}
+        POCKET_MAXIMUM_AGE_MS: ${{ inputs.maximum-age-ms }}
+        POCKET_MAXIMUM_FUTURE_SKEW_MS: ${{ inputs.maximum-future-skew-ms }}
+        POCKET_MINIMUM_SCORE: ${{ inputs.minimum-score }}
+        POCKET_MAXIMUM_INPUT_BYTES: ${{ inputs.maximum-input-bytes }}
+        POCKET_NOW: ${{ inputs.now }}
+        POCKET_FORMAT: ${{ inputs.format }}
+        POCKET_OUTPUT: ${{ inputs.output }}
+      run: |
+        set -euo pipefail
+        args=(
+          verify
+          --candidate "$POCKET_CANDIDATE"
+          --evidence "$POCKET_EVIDENCE"
+          --required-level "$POCKET_REQUIRED_LEVEL"
+          --maximum-age-ms "$POCKET_MAXIMUM_AGE_MS"
+          --maximum-future-skew-ms "$POCKET_MAXIMUM_FUTURE_SKEW_MS"
+          --minimum-score "$POCKET_MINIMUM_SCORE"
+          --maximum-input-bytes "$POCKET_MAXIMUM_INPUT_BYTES"
+          --format "$POCKET_FORMAT"
+          --output "$POCKET_OUTPUT"
+        )
+        if [[ -n "$POCKET_NOW" ]]; then
+          args+=(--now "$POCKET_NOW")
+        fi
+        node "$GITHUB_ACTION_PATH/src/cli.js" "${args[@]}"
+        echo "report=$POCKET_OUTPUT" >> "$GITHUB_OUTPUT"
+
+branding:
+  icon: shield
+  color: purple
